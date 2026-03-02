@@ -15,6 +15,14 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
+# --- Проверка интерактивного терминала (иначе read не работает, скрипт сразу выходит) ---
+if [[ ! -t 0 ]]; then
+   echo "Скрипт нужно запускать в интерактивном терминале (не через pipe/cron)." >&2
+   echo "Выполните: curl -sL -o /tmp/setup-ssh-hardening.sh https://raw.githubusercontent.com/s-bug0ff/setup-ssh-hardening/main/setup-ssh-hardening.sh" >&2
+   echo "Затем: sudo bash /tmp/setup-ssh-hardening.sh" >&2
+   exit 1
+fi
+
 # --- Запрос порта SSH (для шагов 2, 3, 4) ---
 ask_port() {
    echo "Введите порт для SSH (например 27391):"

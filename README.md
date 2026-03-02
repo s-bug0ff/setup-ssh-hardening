@@ -53,6 +53,16 @@ curl -sL -o /tmp/setup-ssh-hardening.sh https://raw.githubusercontent.com/s-bug0
 curl -sL --ipv4 -o /tmp/setup-ssh-hardening.sh https://raw.githubusercontent.com/s-bug0ff/setup-ssh-hardening/main/setup-ssh-hardening.sh && sudo bash /tmp/setup-ssh-hardening.sh
 ```
 
+**Если команда не запускает скрипт или меню не появляется:** выполните по шагам в **интерактивном** терминале (не из другого скрипта):
+
+```bash
+curl -sL -o /tmp/setup-ssh-hardening.sh https://raw.githubusercontent.com/s-bug0ff/setup-ssh-hardening/main/setup-ssh-hardening.sh
+ls -la /tmp/setup-ssh-hardening.sh
+sudo bash /tmp/setup-ssh-hardening.sh
+```
+
+Если после `ls` размер файла 0 или файла нет — проверьте сеть и URL. Скрипт должен запускаться в терминале с вводом (иначе сразу выходит).
+
 При выборе **отдельных пунктов** скрипт запросит только нужные данные (например, для пункта 2–4 — порт SSH; для 1 — имя и пароль пользователя).
 
 При выборе **полного сценария (7)** по очереди запрашиваются: имя пользователя, пароль, порт SSH, подтверждение, установка Netbird (и ключ при необходимости).
