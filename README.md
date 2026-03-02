@@ -41,16 +41,16 @@
 
 ## Быстрый запуск
 
-Запуск одной командой (скрипт скачивается и выполняется):
+Запуск одной командой (скрипт скачивается во временный файл и выполняется). Такой способ работает везде, в том числе там, где `bash <(curl ...)` выдаёт «No such file or directory»:
 
 ```bash
-sudo bash <(curl -sL https://raw.githubusercontent.com/s-bug0ff/setup-ssh-hardening/main/setup-ssh-hardening.sh)
+curl -sL -o /tmp/setup-ssh-hardening.sh https://raw.githubusercontent.com/s-bug0ff/setup-ssh-hardening/main/setup-ssh-hardening.sh && sudo bash /tmp/setup-ssh-hardening.sh
 ```
 
-При проблемах с IPv6 можно принудительно использовать IPv4:
+При проблемах с IPv6 (принудительно IPv4):
 
 ```bash
-sudo bash <(curl -sL --ipv4 https://raw.githubusercontent.com/s-bug0ff/setup-ssh-hardening/main/setup-ssh-hardening.sh)
+curl -sL --ipv4 -o /tmp/setup-ssh-hardening.sh https://raw.githubusercontent.com/s-bug0ff/setup-ssh-hardening/main/setup-ssh-hardening.sh && sudo bash /tmp/setup-ssh-hardening.sh
 ```
 
 При выборе **отдельных пунктов** скрипт запросит только нужные данные (например, для пункта 2–4 — порт SSH; для 1 — имя и пароль пользователя).
