@@ -96,11 +96,9 @@ do_ssh_policies() {
    fi
    cp -a "$SSHD_CONF" "${SSHD_CONF}.bak.$(date +%Y%m%d%H%M%S)"
 
-   if grep -qE '^[[:space:]]*Port[[:space:]]+' "$SSHD_CONF"; then
-      sed -i "s/^[[:space:]]*Port[[:space:]]*.*/Port $SSHPORT/" "$SSHD_CONF"
-   else
-      echo "Port $SSHPORT" >> "$SSHD_CONF"
-   fi
+   # Удаляем все строки с Port (в том числе закомментированные), затем добавляем свою
+   sed -i '/^[[:space:]]*#\{0,1\}[[:space:]]*Port[[:space:]]/d' "$SSHD_CONF"
+   echo "Port $SSHPORT" >> "$SSHD_CONF"
 
    SOCKET_OVERRIDE_DIR="/etc/systemd/system/ssh.socket.d"
    SOCKET_OVERRIDE="${SOCKET_OVERRIDE_DIR}/override.conf"
@@ -117,11 +115,9 @@ EOF
    set_sshd_param() {
       local key="$1"
       local value="$2"
-      if grep -qE "^[[:space:]]*${key}[[:space:]]+" "$SSHD_CONF"; then
-         sed -i "s/^[[:space:]]*${key}[[:space:]]*.*/${key} ${value}/" "$SSHD_CONF"
-      else
-         echo "${key} ${value}" >> "$SSHD_CONF"
-      fi
+      # Удаляем все строки с этим параметром (в том числе закомментированные)
+      sed -i '/^[[:space:]]*#\{0,1\}[[:space:]]*'"${key}"'[[:space:]]/d' "$SSHD_CONF"
+      echo "${key} ${value}" >> "$SSHD_CONF"
    }
    set_sshd_param "PubkeyAuthentication" "yes"
    set_sshd_param "PasswordAuthentication" "no"
