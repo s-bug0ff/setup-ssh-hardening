@@ -66,8 +66,8 @@ fi
 
 # --- Поиск файлов с переопределением параметров SSH ---
 echo ""
-echo "Поиск файлов, где заданы PasswordAuthentication, ChallengeResponseAuthentication, UsePAM, PermitRootLogin..."
-SSH_PARAMS="PasswordAuthentication|ChallengeResponseAuthentication|UsePAM|PermitRootLogin"
+echo "Поиск файлов, где заданы PasswordAuthentication, ChallengeResponseAuthentication, UsePAM, PermitRootLogin, PermitEmptyPasswords, PubkeyAuthentication..."
+SSH_PARAMS="PasswordAuthentication|ChallengeResponseAuthentication|UsePAM|PermitRootLogin|PermitEmptyPasswords|PubkeyAuthentication"
 FOUND_FILES=""
 if [[ -d /etc/ssh ]]; then
    FOUND_FILES=$(grep -rEl "^[[:space:]]*(${SSH_PARAMS})[[:space:]]+" /etc/ssh 2>/dev/null || true)
@@ -137,10 +137,12 @@ set_sshd_param() {
       echo "${key} ${value}" >> "$SSHD_CONF"
    fi
 }
+set_sshd_param "PubkeyAuthentication" "yes"
 set_sshd_param "PasswordAuthentication" "no"
 set_sshd_param "ChallengeResponseAuthentication" "no"
 set_sshd_param "UsePAM" "no"
 set_sshd_param "PermitRootLogin" "no"
+set_sshd_param "PermitEmptyPasswords" "no"
 
 # --- 5) Проверка конфига и перезапуск SSH ---
 if command -v sshd &>/dev/null; then
@@ -173,12 +175,14 @@ JAIL_D_DIR="/etc/fail2ban/jail.d"
 mkdir -p "$JAIL_D_DIR"
 cat > "${JAIL_D_DIR}/sshd-local.conf" << FAIL2BAN
 [DEFAULT]
-bantime  = 24h
-findtime = 10m
+ignoreip = 127.0.0.1/8 
+bantime = 604800 # неделя
+findtime = 86400 # сутки
 maxretry = 3
 
 [sshd]
 enabled = true
+mode    = aggressive
 port    = $SSHPORT
 filter  = sshd
 logpath = %(sshd_log)s
