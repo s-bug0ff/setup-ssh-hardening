@@ -13,6 +13,64 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
+# --- 0) Создание пользователя и добавление в sudo ---
+echo "[0/7] Создание нового пользователя с правами sudo..."
+NEWUSER=""
+while true; do
+   echo "Введите имя нового пользователя:"
+   read -r NEWUSER
+   NEWUSER=$(echo "$NEWUSER" | tr -d '[:space:]')
+   if [[ -z "$NEWUSER" ]]; then
+      echo "Ошибка: имя пользователя не может быть пустым." >&2
+      continue
+   fi
+   if ! [[ "$NEWUSER" =~ ^[a-zA-Z0-9_.-]+$ ]]; then
+      echo "Ошибка: имя может содержать только буквы, цифры, символы _ . -" >&2
+      continue
+   fi
+   if id "$NEWUSER" &>/dev/null; then
+      echo "Пользователь '$NEWUSER' уже существует. Введите другое имя или используйте существующего." >&2
+      continue
+   fi
+   break
+done
+
+NEWPASS=""
+NEWPASS2=""
+while true; do
+   echo "Введите пароль для пользователя $NEWUSER:"
+   read -rs NEWPASS
+   echo ""
+   if [[ -z "$NEWPASS" ]]; then
+      echo "Ошибка: пароль не может быть пустым." >&2
+      continue
+   fi
+   echo "Повторите пароль:"
+   read -rs NEWPASS2
+   echo ""
+   if [[ "$NEWPASS" != "$NEWPASS2" ]]; then
+      echo "Ошибка: пароли не совпадают." >&2
+      continue
+   fi
+   break
+done
+
+useradd -m -s /bin/bash "$NEWUSER"
+echo "${NEWUSER}:${NEWPASS}" | chpasswd
+
+if getent group sudo &>/dev/null; then
+   usermod -aG sudo "$NEWUSER"
+   echo "Пользователь $NEWUSER добавлен в группу sudo."
+elif getent group wheel &>/dev/null; then
+   usermod -aG wheel "$NEWUSER"
+   echo "Пользователь $NEWUSER добавлен в группу wheel (права sudo)."
+else
+   echo "Предупреждение: группы sudo и wheel не найдены. Добавьте пользователя в группу администраторов вручную." >&2
+fi
+
+echo "Пользователь $NEWUSER создан. Не забудьте скопировать ему SSH-ключ (ssh-copy-id -p PORT $NEWUSER@server) до отключения входа по паролю."
+echo ""
+
 # --- Запрос порта ---
 echo "Введите порт для SSH (например 27391):"
 read -r SSHPORT || true
@@ -25,6 +83,7 @@ fi
 
 echo ""
 echo "Будет выполнено:"
+echo "  - Создание пользователя с правами sudo (запрошено выше)"
 echo "  - UFW: сброс правил, останутся только порт $SSHPORT/tcp (SSH) и 443/tcp (HTTPS)"
 echo "  - /etc/ssh/sshd_config: Port $SSHPORT и ужесточение входа"
 echo "  - systemd ssh.socket: порт $SSHPORT"
@@ -65,7 +124,7 @@ if [[ "$INSTALL_NETBIRD" == "yes" ]]; then
 fi
 
 # --- 1) UFW: сброс и только SSH + 443 ---
-echo "[1/6] Сброс UFW и настройка правил (только порт $SSHPORT и 443)..."
+echo "[1/7] Сброс UFW и настройка правил (только порт $SSHPORT и 443)..."
 if command -v ufw &>/dev/null; then
    echo "y" | ufw reset 2>/dev/null || true
    ufw default deny incoming
@@ -78,7 +137,7 @@ else
 fi
 
 # --- 2) sshd_config: Port ---
-echo "[2/6] Настройка /etc/ssh/sshd_config..."
+echo "[2/7] Настройка /etc/ssh/sshd_config..."
 SSHD_CONF="/etc/ssh/sshd_config"
 if [[ ! -f "$SSHD_CONF" ]]; then
    echo "Ошибка: файл $SSHD_CONF не найден." >&2
@@ -93,7 +152,7 @@ else
 fi
 
 # --- 3) systemd ssh.socket ---
-echo "[3/6] Настройка systemd ssh.socket на порт $SSHPORT..."
+echo "[3/7] Настройка systemd ssh.socket на порт $SSHPORT..."
 SOCKET_OVERRIDE_DIR="/etc/systemd/system/ssh.socket.d"
 SOCKET_OVERRIDE="${SOCKET_OVERRIDE_DIR}/override.conf"
 if [[ -d /etc/systemd/system ]]; then
@@ -109,7 +168,7 @@ else
 fi
 
 # --- 4) sshd_config: безопасность ---
-echo "[4/6] Ужесточение параметров в sshd_config..."
+echo "[4/7] Ужесточение параметров в sshd_config..."
 set_sshd_param() {
    local key="$1"
    local value="$2"
@@ -133,13 +192,13 @@ if command -v sshd &>/dev/null; then
       exit 1
    fi
 fi
-echo "[5/6] Перезапуск ssh.socket и ssh.service..."
+echo "[5/7] Перезапуск ssh.socket и ssh.service..."
 systemctl restart ssh.socket 2>/dev/null || true
 systemctl restart sshd.service 2>/dev/null || true
 systemctl restart ssh.service 2>/dev/null || true
 
 # --- 6) fail2ban ---
-echo "[6/6] Установка и настройка fail2ban..."
+echo "[6/7] Установка и настройка fail2ban..."
 if command -v apt-get &>/dev/null; then
    apt-get update -qq
    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq fail2ban
