@@ -64,24 +64,6 @@ if [[ "$INSTALL_NETBIRD" == "yes" ]]; then
    done
 fi
 
-# --- Поиск файлов с переопределением параметров SSH ---
-echo ""
-echo "Поиск файлов, где заданы PasswordAuthentication, ChallengeResponseAuthentication, UsePAM, PermitRootLogin, PermitEmptyPasswords, PubkeyAuthentication..."
-SSH_PARAMS="PasswordAuthentication|ChallengeResponseAuthentication|UsePAM|PermitRootLogin|PermitEmptyPasswords|PubkeyAuthentication"
-FOUND_FILES=""
-if [[ -d /etc/ssh ]]; then
-   FOUND_FILES=$(grep -rEl "^[[:space:]]*(${SSH_PARAMS})[[:space:]]+" /etc/ssh 2>/dev/null || true)
-fi
-if [[ -n "$FOUND_FILES" ]]; then
-   echo "Найдены файлы с переопределением этих параметров:"
-   echo "$FOUND_FILES" | while read -r f; do
-      [[ -n "$f" ]] && echo "  — $f"
-   done
-else
-   echo "Файлов с переопределением этих параметров не найдено."
-fi
-echo ""
-
 # --- 1) UFW: сброс и только SSH + 443 ---
 echo "[1/6] Сброс UFW и настройка правил (только порт $SSHPORT и 443)..."
 if command -v ufw &>/dev/null; then
@@ -213,6 +195,24 @@ if [[ "$INSTALL_NETBIRD" == "yes" ]] && [[ -n "${NETBIRD_KEY:-}" ]]; then
 elif [[ "$INSTALL_NETBIRD" == "yes" ]]; then
    echo "[7/7] Netbird: пропущено (ключ не введён)."
 fi
+
+# --- Поиск файлов с переопределением параметров SSH ---
+echo ""
+echo "Поиск файлов, где заданы PasswordAuthentication, ChallengeResponseAuthentication, UsePAM, PermitRootLogin, PermitEmptyPasswords, PubkeyAuthentication..."
+SSH_PARAMS="PasswordAuthentication|ChallengeResponseAuthentication|UsePAM|PermitRootLogin|PermitEmptyPasswords|PubkeyAuthentication"
+FOUND_FILES=""
+if [[ -d /etc/ssh ]]; then
+   FOUND_FILES=$(grep -rEl "^[[:space:]]*(${SSH_PARAMS})[[:space:]]+" /etc/ssh 2>/dev/null || true)
+fi
+if [[ -n "$FOUND_FILES" ]]; then
+   echo "Найдены файлы с переопределением этих параметров:"
+   echo "$FOUND_FILES" | while read -r f; do
+      [[ -n "$f" ]] && echo "  — $f"
+   done
+else
+   echo "Файлов с переопределением этих параметров не найдено."
+fi
+echo ""
 
 # --- Итог ---
 echo ""
